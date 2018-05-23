@@ -6,59 +6,106 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using OpenCvSharp;
+using OpenCvSharp.XPhoto;
 
 namespace ChessVisionWin
 {
-    static class Program
+    class Program
     {
         //private const string VideoPath = @"C:\joel\large\cv-videos\chess\WIN_20180519_20_09_12_Pro.mp4";
-        private const string VideoPath = @"C:\joel\large\cv-videos\chess\WIN_20180519_20_38_04_Pro.mp4";
+        //private const string VideoPath = @"C:\joel\large\cv-videos\chess\WIN_20180519_20_38_04_Pro.mp4";
+        //private const string VideoPath = @"C:\code\cv\chess\recordings\MVI_0018.MOV";
+        private const string VideoPath = @"C:\code\cv\chess\recordings\Aronian-Kramnik-2018.MOV";
         private const string ImagePath = @"C:\code\cv\chess\recordings\cg\chess2.png";
 
+        private Mat resized = new Mat();
+        private Mat thresh = new Mat();
+        private Window threshWin;
+        private Mat gray = new Mat();
+
         static void Main(string[] args)
+        {
+            new Program().Run();
+        }
+
+        void Run()
         {
             using (var image = Cv2.ImRead(ImagePath))
             {
                 using (var imageWin = new Window("Image", image))
                 {
-                    var result = new Mat();
-                    ProcessFrame(image, result);
-                    imageWin.ShowImage(result);
-                    Cv2.WaitKey();
+                    using (threshWin = new Window("Threshold", image))
+                    {
+                        var result = new Mat();
+                        ProcessFrame(image, result);
+                        imageWin.ShowImage(result);
+                        Cv2.WaitKey();
+                    }
                 }
             }
 
             using (var video = new VideoCapture(VideoPath))
             {
                 var frame = new Mat(new[] { video.FrameWidth, video.FrameHeight }, MatType.CV_8UC3);
+                thresh = new Mat();// frame.Clone();
                 var output = new Mat();
                 var nextFrameTime = DateTime.Now;
                 using (var inputWin = new Window("Input", frame))
                 {
-                    //inputWin.DisplayOverlay("Input", 0);
-                    while (video.Read(frame))
+                    using (threshWin = new Window("Threshold", frame))
                     {
-                        //var now = DateTime.Now;
-                        video.Read(frame);
-                        if (frame.Width == 0) break;
+                        //inputWin.DisplayOverlay("Input", 0);
+                        while (video.Read(frame))
+                        {
 
-                        ProcessFrame(frame, output);
-                        inputWin.ShowImage(output);
-                        
-                        if (Cv2.WaitKey((int) (1000.0 / video.Fps)) != -1) break;
+                            //var now = DateTime.Now;
+                            video.Read(frame);
+                            if (frame.Width == 0) break;
+
+                            ProcessFrame(frame, output);
+                            inputWin.ShowImage(output);
+
+                            if (Cv2.WaitKey((int)(1000.0 / video.Fps)) != -1) break;
+                        }
                     }
                 }
 
             }
         }
-        static void ProcessFrame(Mat frame, Mat output)
+
+        void ProcessFrame(Mat frame, Mat output)
         {
+            double sizeFactor = 640.0 / frame.Width;
+            Size newSize = new Size(frame.Width * sizeFactor, frame.Height * sizeFactor);
+            Cv2.Resize(frame, frame, newSize);
+
             //Cv2.Canny(frame, output, 10.0, 130.0, apertureSize: 3, L2gradient: true);
-            frame.CopyTo(output);
+
 
             var corners = new Point2f[4];
             var patternSize = new Size(7, 3);
-            var found = Cv2.FindChessboardCorners(frame, patternSize, out corners, ChessboardFlags.AdaptiveThresh | ChessboardFlags.NormalizeImage);
+
+            //var thresh = new Mat();
+            //thresh = new Mat(frame.);
+            Cv2.CvtColor(frame, gray, ColorConversionCodes.BGR2GRAY);
+
+            //Cv2.GaussianBlur(gray, gray, new Size(15, 15), 0, 0);
+            Cv2.AdaptiveThreshold(gray, thresh,
+                maxValue: 255.0,
+                adaptiveMethod: AdaptiveThresholdTypes.GaussianC,
+                thresholdType: ThresholdTypes.Binary,
+                blockSize: (gray.Height / 2) | 1,
+                c: 0.0);
+
+            //double threshold = Cv2.Mean(gray).Val0;
+            //Cv2.Threshold(gray, thresh, threshold, 255.0, ThresholdTypes.Binary);
+
+            threshWin.ShowImage(thresh);
+
+            var found = Cv2.FindChessboardCorners(thresh, patternSize, out corners, ChessboardFlags.None); //, ChessboardFlags.AdaptiveThresh | ChessboardFlags.NormalizeImage);
+            //var found = Cv2.FindChessboardCorners(frame, patternSize, out corners, ChessboardFlags.None); //, ChessboardFlags.AdaptiveThresh | ChessboardFlags.NormalizeImage);
+
+            frame.CopyTo(output);
             Cv2.DrawChessboardCorners(output, patternSize, corners, found);
             if (!found) Console.Out.WriteLine("Chessboard not found :( ");
 
@@ -74,17 +121,40 @@ namespace ChessVisionWin
                     }
                 }
 
-                var boardToWorldTransform = Cv2.FindHomography(boardPoints, foundPoints);
-                var worldToBoardTransform = boardToWorldTransform.Inv(); //Cv2.FindHomography(foundPoints, boardPoints);
-                worldToBoardTransform.Set(0, 0, worldToBoardTransform.Get<double>(0, 0) / 40.0);
-                worldToBoardTransform.Set(1, 1, worldToBoardTransform.Get<double>(1, 1) / 40.0);
-                worldToBoardTransform.Set(2, 2, worldToBoardTransform.Get<double>(2, 2) / 40.0);
+                var boardToImageTransform = Cv2.FindHomography(boardPoints, foundPoints);
+                var imageToBoardTransform = boardToImageTransform.Inv(); //Cv2.FindHomography(foundPoints, boardPoints);
+                //imageToBoardTransform.Set(0, 0, imageToBoardTransform.Get<double>(0, 0) / 40.0);
+                //imageToBoardTransform.Set(1, 1, imageToBoardTransform.Get<double>(1, 1) / 40.0);
+                //imageToBoardTransform.Set(2, 2, imageToBoardTransform.Get<double>(2, 2) / 40.0);
+                //Cv2.PerspectiveTransform()
 
                 //var xformedFound = Cv2.Transform()
                 //var imageXForm = boardToWorldTransform
-                Cv2.WarpPerspective(frame, output, worldToBoardTransform, frame.Size(), InterpolationFlags.Cubic, BorderTypes.Constant, Scalar.Aqua);
                 //Console.Out.WriteLine(boardToWorldTransform);
+
+                //Cv2.WarpPerspective(frame, output, imageToBoardTransform, frame.Size(), InterpolationFlags.Cubic, BorderTypes.Constant, Scalar.Black);
+                for (int i = 0; i < 8; i++)
+                {
+                    DrawCellPoly(boardToImageTransform, output, i, i);
+                }
             }
         }
+
+        static void DrawCellPoly(Mat boardToImageTransform, Mat output, int row, int col)
+        {
+            Point2d[] corners = Cv2.PerspectiveTransform(
+                new Point2d[]
+                {
+                    new Point2d((double) row, (double) col),
+                    new Point2d((double) row, (double) col + 1),
+                    new Point2d((double) row + 1, (double) col + 1),
+                    new Point2d((double) row + 1, (double) col)
+                }, 
+                boardToImageTransform);
+            Cv2.FillConvexPoly(output, corners.Select(p => new Point(p.X, p.Y)), Scalar.OrangeRed, LineTypes.AntiAlias);
+        }
+
+
+
     }
 }
