@@ -15,7 +15,8 @@ namespace ChessVisionWin
         //private const string VideoPath = @"C:\joel\large\cv-videos\chess\WIN_20180519_20_09_12_Pro.mp4";
         //private const string VideoPath = @"C:\joel\large\cv-videos\chess\WIN_20180519_20_38_04_Pro.mp4";
         //private const string VideoPath = @"C:\code\cv\chess\recordings\MVI_0018.MOV";
-        private const string VideoPath = @"C:\code\cv\chess\recordings\Aronian-Kramnik-2018.MOV";
+        //private const string VideoPath = @"C:\code\cv\chess\recordings\Aronian-Kramnik-2018.MOV";
+        private const string VideoPath = @"C:\joel\large\cv-videos\chess\Aronian-Kramnik-2018.MOV";
         private const string ImagePath = @"C:\code\cv\chess\recordings\cg\chess2.png";
 
         private Mat resized = new Mat();
@@ -87,15 +88,21 @@ namespace ChessVisionWin
 
             //var thresh = new Mat();
             //thresh = new Mat(frame.);
+            //Cv2.EdgePreservingFilter(frame, frame, EdgePreservingMethods.RecursFilter, sigmaS: 60, sigmaR: 0.5f);
             Cv2.CvtColor(frame, gray, ColorConversionCodes.BGR2GRAY);
 
-            //Cv2.GaussianBlur(gray, gray, new Size(15, 15), 0, 0);
+            //Cv2.MedianBlur(gray, gray, 5); // Disallows chessboard to be found, because of how it opens/closes corners
+
+            ////Cv2.GaussianBlur(gray, gray, new Size(15, 15), 0, 0);
             Cv2.AdaptiveThreshold(gray, thresh,
                 maxValue: 255.0,
                 adaptiveMethod: AdaptiveThresholdTypes.GaussianC,
                 thresholdType: ThresholdTypes.Binary,
                 blockSize: (gray.Height / 2) | 1,
                 c: 0.0);
+            //Cv2.Canny(gray, thresh, 48, 96, apertureSize: 3, L2gradient: true); // with Sobel op
+            //LineSegmentPolar[] lines = Cv2.HoughLines(thresh, 4.0, Math.PI * 2.0 / 360.0, frame.Height / 2);
+            //Console.WriteLine($"{lines.Length} lines found.");
 
             //double threshold = Cv2.Mean(gray).Val0;
             //Cv2.Threshold(gray, thresh, threshold, 255.0, ThresholdTypes.Binary);
