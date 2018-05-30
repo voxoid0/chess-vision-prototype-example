@@ -50,32 +50,42 @@ namespace ChessVisionWin
             {
                 var video = new ChessVideoSource(videoCapture);
                 var chessboardModel = new ChessboardInitializer().Do(video);
+                
+                var bgModelWin = new Window("Background Model");
+                bgModelWin.ShowImage(chessboardModel.BackgroundModel);
+                var squaresMaskWin = new Window("Squares Mask");
+                squaresMaskWin.ShowImage(chessboardModel.SquaresMask);
+                Cv2.WaitKey();
+
+                var segmenter = new BoardPieceSegmenter(chessboardModel);
+                segmenter.Do(video);
+
+                //Cv2.WaitKey();
 
 
+                //    var frame = new Mat(new[] { video.FrameWidth, video.FrameHeight }, MatType.CV_8UC3);
+                //    thresh = new Mat();// frame.Clone();
+                //    var output = new Mat();
+                //    var nextFrameTime = DateTime.Now;
+                //    using (var inputWin = new Window("Input", frame))
+                //    {
+                //        using (threshWin = new Window("Threshold", frame))
+                //        {
+                //            //inputWin.DisplayOverlay("Input", 0);
+                //            while (video.Read(frame))
+                //            {
 
-                var frame = new Mat(new[] { video.FrameWidth, video.FrameHeight }, MatType.CV_8UC3);
-                thresh = new Mat();// frame.Clone();
-                var output = new Mat();
-                var nextFrameTime = DateTime.Now;
-                using (var inputWin = new Window("Input", frame))
-                {
-                    using (threshWin = new Window("Threshold", frame))
-                    {
-                        //inputWin.DisplayOverlay("Input", 0);
-                        while (video.Read(frame))
-                        {
-                            
-                            //var now = DateTime.Now;
-                            video.Read(frame);
-                            if (frame.Width == 0) break;
+                //                //var now = DateTime.Now;
+                //                video.Read(frame);
+                //                if (frame.Width == 0) break;
 
-                            ProcessFrame(frame, output);
-                            inputWin.ShowImage(output);
+                //                ProcessFrame(frame, output);
+                //                inputWin.ShowImage(output);
 
-                            if (Cv2.WaitKey((int)(1000.0 / video.Fps)) != -1) break;
-                        }
-                    }
-                }
+                //                if (Cv2.WaitKey((int)(1000.0 / video.Fps)) != -1) break;
+                //            }
+                //        }
+                //    }
 
             }
         }
