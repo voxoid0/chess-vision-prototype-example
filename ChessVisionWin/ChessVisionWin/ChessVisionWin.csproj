@@ -63,17 +63,19 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ChessPipeline1.cs" />
-    <Compile Include="DefaultPipelineStage.cs" />
+    <Compile Include="ChessboardInitializer.cs" />
+    <Compile Include="ChessVideoSource.cs" />
+    <Compile Include="Pipeline\ChessPipeline1.cs" />
+    <Compile Include="Pipeline\DefaultPipelineStage.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
-    <Compile Include="IPipeline.cs" />
-    <Compile Include="IPipelineStage.cs" />
-    <Compile Include="PipelineDisplayer.cs" />
+    <Compile Include="Pipeline\IPipeline.cs" />
+    <Compile Include="Pipeline\IPipelineStage.cs" />
+    <Compile Include="Pipeline\PipelineDisplayer.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">

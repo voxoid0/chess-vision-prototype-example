@@ -31,22 +31,28 @@ namespace ChessVisionWin
 
         void Run()
         {
-            using (var image = Cv2.ImRead(ImagePath))
-            {
-                using (var imageWin = new Window("Image", image))
-                {
-                    using (threshWin = new Window("Threshold", image))
-                    {
-                        var result = new Mat();
-                        ProcessFrame(image, result);
-                        imageWin.ShowImage(result);
-                        Cv2.WaitKey();
-                    }
-                }
-            }
+            //using (var image = Cv2.ImRead(ImagePath))
+            //{
+            //    using (var imageWin = new Window("Image", image))
+            //    {
+            //        using (threshWin = new Window("Threshold", image))
+            //        {
+            //            var result = new Mat();
+            //            ProcessFrame(image, result);
+            //            imageWin.ShowImage(result);
+            //            Cv2.WaitKey();
+            //        }
+            //    }
+            //}
 
-            using (var video = new VideoCapture(VideoPath))
+
+            using (var videoCapture = new VideoCapture(VideoPath))
             {
+                var video = new ChessVideoSource(videoCapture);
+                var chessboardModel = new ChessboardInitializer().Do(video);
+
+
+
                 var frame = new Mat(new[] { video.FrameWidth, video.FrameHeight }, MatType.CV_8UC3);
                 thresh = new Mat();// frame.Clone();
                 var output = new Mat();
@@ -58,7 +64,7 @@ namespace ChessVisionWin
                         //inputWin.DisplayOverlay("Input", 0);
                         while (video.Read(frame))
                         {
-
+                            
                             //var now = DateTime.Now;
                             video.Read(frame);
                             if (frame.Width == 0) break;
@@ -73,6 +79,7 @@ namespace ChessVisionWin
 
             }
         }
+
 
         void ProcessFrame(Mat frame, Mat output)
         {

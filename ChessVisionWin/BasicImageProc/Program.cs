@@ -61,6 +61,7 @@ namespace BasicImageProc
             result = input.Clone();
             DrawPoints(features, result, Scalar.Red);
 
+            
             //Point2f[] features = Cv2.Fast(grayscale, maxCorners: 64, qualityLevel: 0.01, minDistance: 5, mask: new Mat(), blockSize: 7, useHarrisDetector: true, k: 0.05);
             //result = input.Clone();
             //DrawPoints(features, result, Scalar.Red);
