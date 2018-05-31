@@ -18,7 +18,7 @@ namespace ChessVisionWin
         public BoardPieceSegmenter(ChessboardModel chessboardModel)
         {
             this.chessboardModel = chessboardModel;
-            difference = new Mat(chessboardModel.BackgroundModel.Size(), chessboardModel.BackgroundModel.Type());
+            difference = new Mat(chessboardModel.BackgroundModel.Size(), MatType.CV_16SC3); // chessboardModel.BackgroundModel.Type());
             states = difference.Clone();
             diffWin = new Window("Difference from BG");
         }
@@ -28,7 +28,7 @@ namespace ChessVisionWin
             Mat frame = video.GetNextFrame();
             while (frame != null)
             {
-                Cv2.Subtract(chessboardModel.BackgroundModel, frame, difference, chessboardModel.SquaresMask);
+                Cv2.Subtract(frame, chessboardModel.BackgroundModel, difference, chessboardModel.SquaresMask);
                 diffWin.ShowImage(difference);
 
                 var classif = CalcSquareClassifications(difference);

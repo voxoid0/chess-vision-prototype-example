@@ -100,16 +100,31 @@ namespace ChessVisionWin
 
             Scalar evenColor = GetMeanColor(0, frame);
             Scalar oddColor = GetMeanColor(1, frame);
-            // TODO: proper color conversion
-            if (evenColor.Val0 + evenColor.Val1 + evenColor.Val2 > oddColor.Val0 + oddColor.Val1 + oddColor.Val2)
-            {
-                WhiteSquareColor = evenColor;
-                BlackSquareColor = oddColor;
-            }
+            WhiteSquareColor = evenColor;
+            BlackSquareColor = oddColor;
+            //// TODO: proper color conversion
+            //if (evenColor.Val0 + evenColor.Val1 + evenColor.Val2 > oddColor.Val0 + oddColor.Val1 + oddColor.Val2)
+            //{
+            //    WhiteSquareColor = evenColor;
+            //    BlackSquareColor = oddColor;
+            //}
+            //else
+            //{
+            //    WhiteSquareColor = oddColor;
+            //    BlackSquareColor = evenColor;
+            //}
+
             BackgroundModel = DrawBackgroundModel(frame);
             SquaresMask = DrawSquaresMask(frame);
             XOnYHist = CreateXOnYHistograms(frame);
             InitFrame = frame.Clone();
+
+            //var bla = frame.Clone();
+            //GetSquareMask(0, 0, bla);
+            //GetSquareMask(0, 3, bla);
+            //var win = new Window("Bla");
+            //win.ShowImage(bla);
+            //Cv2.WaitKey();
         }
 
         /// <summary>
@@ -122,12 +137,22 @@ namespace ChessVisionWin
             using (var xOnYWin = new Window("X On Y"))
             {
                 Mat[,] xOnYHist = new Mat[2, 2] { { new Mat(), new Mat() }, { new Mat(), new Mat() } };
-                Mat difference = new Mat(frame.Size(), frame.Type());
+                Mat difference = new Mat(frame.Size(), MatType.CV_16SC3);
+
+                Mat sFrame = frame.Clone();
+                sFrame.ConvertTo(sFrame, MatType.CV_16SC3);
+                Mat sBg = BackgroundModel.Clone();
+                sBg.ConvertTo(sBg, MatType.CV_16SC3);
+
                 for (int pieceColor = 0; pieceColor < 2; pieceColor++)
                 {
                     for (int squareColor = 0; squareColor < 2; squareColor++)
                     {
-                        Cv2.Subtract(BackgroundModel, frame, difference, SquaresMask);
+                        Cv2.Subtract(sFrame, sBg, difference, SquaresMask);
+
+                        //Cv2.MinMaxIdx(difference, out double minVal, out double maxVal);
+                        //Console.WriteLine($"min = {minVal}; max = {maxVal}");
+
                         Mat xOnYMask = CreateXOnYMaskForInitialPositions(frame, pieceColor, squareColor);
 
                         xOnYWin.ShowImage(xOnYMask);
@@ -142,6 +167,7 @@ namespace ChessVisionWin
                             histSize: new[] { 16, 16, 16 },
                             ranges: new[] { new Rangef(0f, 256f), new Rangef(0f, 256f), new Rangef(0f, 256f) });
                     }
+
                 }
                 return xOnYHist;
             }
@@ -163,7 +189,7 @@ namespace ChessVisionWin
             {
                 for (int col = 0; col < 8; col++)
                 {
-                    if ((row + col + squareColor) % 2 == 0)
+                    if (SquareColor(row, col) == squareColor)
                     {
                         GetSquareMask(row, col, mask, SquareMaskScale);
                     }
@@ -173,14 +199,14 @@ namespace ChessVisionWin
             return mask;
         }
 
-        Scalar GetMeanColor(int evenOrOddSquares, Mat frame)
+        Scalar GetMeanColor(int squareColor, Mat frame)
         {
             Mat mask = new Mat(frame.Size(), MatType.CV_8U);
             for (int col = 0; col < 8; col++)
             {
                 for (int row = 2; row < 6; row++)
                 {
-                    if ((col + row + evenOrOddSquares) % 2 == 0)
+                    if (SquareColor(row, col) == squareColor)
                     {
                         GetSquareMask(row, col, mask);
                     }
@@ -208,7 +234,7 @@ namespace ChessVisionWin
 
         public static bool IsWhiteSquare(int row, int col)
         {
-            return ((row + col) % 2 == 0);
+            return SquareColor(row, col) == 0;
         }
 
         public static int SquareColor(int row, int col)
@@ -221,8 +247,14 @@ namespace ChessVisionWin
             return GetSquarePoints(row, col, BoardToImageTransform, scale);
         }
 
-        public static Point2d[] GetSquarePoints(int row, int col, Mat boardToImageTransform, double scale = 1.0)
+        public static Point2d[] GetSquarePoints(int rowIn, int colIn, Mat boardToImageTransform, double scale = 1.0)
         {
+            // TODO: make always correct for any board orientation in video
+            int row = colIn;
+            int col = 7 - rowIn;
+            //int row = rowIn;
+            //int col = colIn;
+
             // Board coordinates adjusted by scale
             double left = row + 0.5 - (0.5 * scale);
             double top = col + 0.5 - (0.5 * scale);
@@ -240,30 +272,30 @@ namespace ChessVisionWin
                 boardToImageTransform);
         }
 
-        public Point2d[] GetBoardCorners()
-        {
-            return Cv2.PerspectiveTransform(
-                new Point2d[]
-                {
-                    new Point2d(0.0, 0.0),
-                    new Point2d(0.0, 8.0),
-                    new Point2d(8.0, 8.0),
-                    new Point2d(8.0, 0.0)
-                },
-                BoardToImageTransform);
-        }
+        //public Point2d[] GetBoardCorners()
+        //{
+        //    return Cv2.PerspectiveTransform(
+        //        new Point2d[]
+        //        {
+        //            new Point2d(0.0, 0.0),
+        //            new Point2d(0.0, 8.0),
+        //            new Point2d(8.0, 8.0),
+        //            new Point2d(8.0, 0.0)
+        //        },
+        //        BoardToImageTransform);
+        //}
 
-        Mat DrawBoardMask(Mat frame)
-        {
-            var result = new Mat(frame.Size(), MatType.CV_8U);
-            var corners = OCVUtil.ToPoints(GetBoardCorners());
-            Cv2.FillConvexPoly(result, corners, Scalar.White);
-            return result;
-        }
+        //Mat DrawBoardMask(Mat frame)
+        //{
+        //    var result = new Mat(frame.Size(), MatType.CV_8U);
+        //    var corners = OCVUtil.ToPoints(GetBoardCorners());
+        //    Cv2.FillConvexPoly(result, corners, Scalar.White);
+        //    return result;
+        //}
 
         Mat DrawSquaresMask(Mat frame)
         {
-            var result = new Mat(frame.Size(), MatType.CV_8U);
+            var result = new Mat(frame.Size(), MatType.CV_8U, Scalar.Black);
             for (int col = 0; col < 8; col++)
             {
                 for (int row = 0; row < 8; row++)

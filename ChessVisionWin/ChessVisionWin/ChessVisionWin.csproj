@@ -66,6 +66,7 @@
     <Compile Include="BoardPieceSegmenter.cs" />
     <Compile Include="ChessboardInitializer.cs" />
     <Compile Include="ChessVideoSource.cs" />
+    <Compile Include="HistPlotter.cs" />
     <Compile Include="OCVUtil.cs" />
     <Compile Include="Pipeline\ChessPipeline1.cs" />
     <Compile Include="Pipeline\DefaultPipelineStage.cs" />
