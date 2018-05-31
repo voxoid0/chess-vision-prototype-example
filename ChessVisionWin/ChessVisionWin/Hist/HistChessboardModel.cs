@@ -5,7 +5,7 @@ namespace ChessVisionWin
 {
     class HistChessboardModel
     {
-        private const double SquareMaskScale = 1.0; // 0.85;
+        public const double SquareMaskScale = 0.85;
 
         public Mat BoardToImageTransform { get; }
         public Mat ImageToBoardTransform { get; }
@@ -25,37 +25,24 @@ namespace ChessVisionWin
             this.BoardToImageTransform = boardToImageTransform ?? throw new ArgumentNullException(nameof(boardToImageTransform));
             this.ImageToBoardTransform = imageToBoardTransform ?? throw new ArgumentNullException(nameof(imageToBoardTransform));
 
-            Scalar evenColor = GetMeanColor(0, frame);
-            Scalar oddColor = GetMeanColor(1, frame);
-            WhiteSquareColor = evenColor;
-            BlackSquareColor = oddColor;
-            //// TODO: proper color conversion
-            //if (evenColor.Val0 + evenColor.Val1 + evenColor.Val2 > oddColor.Val0 + oddColor.Val1 + oddColor.Val2)
-            //{
-            //    WhiteSquareColor = evenColor;
-            //    BlackSquareColor = oddColor;
-            //}
-            //else
-            //{
-            //    WhiteSquareColor = oddColor;
-            //    BlackSquareColor = evenColor;
-            //}
+            WhiteSquareColor = GetMeanColor(0, frame);
+            BlackSquareColor = GetMeanColor(1, frame);
 
             BackgroundModel = DrawBackgroundModel(frame);
             SquaresMask = DrawSquaresMask(frame);
+
+            var bgModelWin = new Window("Background Model");
+            bgModelWin.ShowImage(BackgroundModel);
+            var squaresMaskWin = new Window("Squares Mask");
+            squaresMaskWin.ShowImage(SquaresMask);
+            Cv2.WaitKey();
+
             XOnYHist = CreateXOnYHistograms(frame);
             InitFrame = frame.Clone();
-
-            //var bla = frame.Clone();
-            //DrawSquareMask(0, 0, bla);
-            //DrawSquareMask(0, 3, bla);
-            //var win = new Window("Bla");
-            //win.ShowImage(bla);
-            //Cv2.WaitKey();
         }
 
         /// <summary>
-        /// Creates a histogram for each of the 4 combinations of piece color on square color, differenced with the background model.
+        /// Creates a histogram for each of the 6 combinations of piece color (white, black, no piece) on square color (white, black), differenced with the background model.
         /// </summary>
         /// <param name="frame"></param>
         /// <returns></returns>
@@ -63,7 +50,10 @@ namespace ChessVisionWin
         {
             using (var xOnYWin = new Window("X On Y"))
             {
-                Mat[,] xOnYHist = new Mat[3, 2] { { new Mat(), new Mat() }, { new Mat(), new Mat() }, { new Mat(), new Mat() } };
+                Mat[,] xOnYHist = new Mat[3, 2];
+
+                var histSize = new[] { 16, 16, 16 };
+                var ranges = new[] { new Rangef(0f, 256f), new Rangef(0f, 256f), new Rangef(0f, 256f) };
 
                 for (int pieceColor = 0; pieceColor < 3; pieceColor++)
                 {
@@ -76,15 +66,15 @@ namespace ChessVisionWin
 
                         xOnYWin.ShowImage(xOnYMask);
                         Cv2.WaitKey();
-
+                        xOnYHist[pieceColor, squareColor] = new Mat();
                         Cv2.CalcHist(
                             images: new[] { frame },
                             channels: new int[] { 0, 1, 2 },
                             mask: xOnYMask,
                             hist: xOnYHist[pieceColor, squareColor],
                             dims: 3,
-                            histSize: new[] { 16, 16, 16 },
-                            ranges: new[] { new Rangef(0f, 256f), new Rangef(0f, 256f), new Rangef(0f, 256f) });
+                            histSize: histSize,
+                            ranges: ranges);
                     }
 
                 }
@@ -207,27 +197,6 @@ namespace ChessVisionWin
                 },
                 boardToImageTransform);
         }
-
-        //public Point2d[] GetBoardCorners()
-        //{
-        //    return Cv2.PerspectiveTransform(
-        //        new Point2d[]
-        //        {
-        //            new Point2d(0.0, 0.0),
-        //            new Point2d(0.0, 8.0),
-        //            new Point2d(8.0, 8.0),
-        //            new Point2d(8.0, 0.0)
-        //        },
-        //        BoardToImageTransform);
-        //}
-
-        //Mat DrawBoardMask(Mat frame)
-        //{
-        //    var result = new Mat(frame.Size(), MatType.CV_8U);
-        //    var corners = OCVUtil.ToPoints(GetBoardCorners());
-        //    Cv2.FillConvexPoly(result, corners, Scalar.White);
-        //    return result;
-        //}
 
         Mat DrawSquaresMask(Mat frame)
         {

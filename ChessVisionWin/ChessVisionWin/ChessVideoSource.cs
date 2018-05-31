@@ -9,15 +9,19 @@ namespace ChessVisionWin
 {
     class ChessVideoSource : IVideo
     {
+        private const double MaxSpeed = 10000.0;
+
         private readonly VideoCapture videoCapture;
         private Mat frame;
         private Window inputWin;
         private double _speed;
+        private double _curSpeed;
 
         public ChessVideoSource(VideoCapture video, double speed = 1.0)
         {
             this.videoCapture = video ?? throw new ArgumentNullException(nameof(video));
             _speed = speed;
+            _curSpeed = _speed;
             if (video.FrameWidth == 0) throw new InvalidOperationException("Video source invalid (missing file?)");
             frame = new Mat(new[] { video.FrameWidth, video.FrameHeight }, MatType.CV_8UC3);
             inputWin = new Window("Input");
@@ -26,7 +30,16 @@ namespace ChessVisionWin
         public Mat GetNextFrame()
         {
             // Wait for frame realtime, and check for key (exit)
-            if (Cv2.WaitKey((int) (1000.0 / videoCapture.Fps / _speed)) != -1) return null;
+            var key = Cv2.WaitKey(Math.Max(1, (int) (1000.0 / videoCapture.Fps / _curSpeed)));
+            if (key != -1)
+            {
+                if (key == 'p')
+                    Cv2.WaitKey();
+                else if (key == 's')
+                    _curSpeed = _curSpeed == MaxSpeed ? _speed : MaxSpeed;
+                else
+                    return null;
+            }
 
             if (videoCapture.Read(frame) && frame.Width + frame.Height > 0)
             {

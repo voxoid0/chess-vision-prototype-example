@@ -42,7 +42,6 @@ namespace ChessVisionWin
         {
             var result = new SquareClassificationScores[8,8];
             Mat squareMask = new Mat(frame.Size(), MatType.CV_8U);
-            Mat squareHist = new Mat();
             var histSize = new[] { 16, 16, 16 };
             var histRanges = new[] { new Rangef(0f, 256f), new Rangef(0f, 256f), new Rangef(0f, 256f) };
 
@@ -51,7 +50,8 @@ namespace ChessVisionWin
                 for (int col = 0; col < 8; col++)
                 {
                     squareMask.SetTo(Scalar.Black);
-                    _histChessboardModel.DrawSquareMask(row, col, squareMask, 1.0);
+                    _histChessboardModel.DrawSquareMask(row, col, squareMask, HistChessboardModel.SquareMaskScale);
+                    Mat squareHist = new Mat();
                     Cv2.CalcHist(
                         images: new[] { frame },
                         channels: new int[] { 0, 1, 2 },
@@ -62,17 +62,18 @@ namespace ChessVisionWin
                         ranges: histRanges);
 
                     var method = HistCompMethods.Correl;
+                    var squareColor = HistChessboardModel.SquareColor(row, col);
                     var likeWhitePiece = Cv2.CompareHist(
                         h1: squareHist,
-                        h2: _histChessboardModel.XOnYHist[(int) ChessColor.White, HistChessboardModel.SquareColor(row, col)], 
+                        h2: _histChessboardModel.XOnYHist[(int)ChessColor.White, squareColor], 
                         method: method);
                     var likeBlackPiece = Cv2.CompareHist(
                         h1: squareHist,
-                        h2: _histChessboardModel.XOnYHist[(int)ChessColor.Black, HistChessboardModel.SquareColor(row, col)],
+                        h2: _histChessboardModel.XOnYHist[(int)ChessColor.Black, squareColor],
                         method: method);
                     var likeEmpty = Cv2.CompareHist(
                         h1: squareHist,
-                        h2: _histChessboardModel.XOnYHist[(int)SquareState.Empty, HistChessboardModel.SquareColor(row, col)],
+                        h2: _histChessboardModel.XOnYHist[(int)SquareState.Empty, squareColor],
                         method: method);
                     result[row, col] = new SquareClassificationScores(new [] { likeWhitePiece, likeBlackPiece, likeEmpty });
                 }
