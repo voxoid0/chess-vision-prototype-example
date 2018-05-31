@@ -27,7 +27,9 @@ namespace ChessVisionWin
             Mat thresh = new Mat();
             var corners = new Point2f[4];
             var patternSize = new Size(7, 3);
+            var threshWin = new Window("Adaptive Threshold");
 
+            // TODO: each iteration, try different block sizes for the adaptive threshold (height / 4, height / 2, etc)
             do
             {
                 frame = video.GetNextFrame();
@@ -39,9 +41,9 @@ namespace ChessVisionWin
                         maxValue: 255.0,
                         adaptiveMethod: AdaptiveThresholdTypes.GaussianC,
                         thresholdType: ThresholdTypes.Binary,
-                        blockSize: (gray.Height / 2) | 1,
+                        blockSize: (gray.Height / 4) | 1,
                         c: 0.0);
-                    //threshWin.ShowImage(thresh);
+                    threshWin.ShowImage(thresh);
 
                     var found = Cv2.FindChessboardCorners(thresh, patternSize, out corners,
                         ChessboardFlags.None); //, ChessboardFlags.AdaptiveThresh | ChessboardFlags.NormalizeImage);
@@ -90,6 +92,10 @@ namespace ChessVisionWin
         public Scalar BlackSquareColor { get; }
         public Mat BackgroundModel { get; }
         public Mat SquaresMask { get; set; }
+
+        /// <summary>
+        /// Histogram for square with each Piece color (first index: white, black, empty) on each square color (second index: white, black)
+        /// </summary>
         public Mat[,] XOnYHist { get; }
         public Mat InitFrame { get; }
 
@@ -120,8 +126,8 @@ namespace ChessVisionWin
             InitFrame = frame.Clone();
 
             //var bla = frame.Clone();
-            //GetSquareMask(0, 0, bla);
-            //GetSquareMask(0, 3, bla);
+            //DrawSquareMask(0, 0, bla);
+            //DrawSquareMask(0, 3, bla);
             //var win = new Window("Bla");
             //win.ShowImage(bla);
             //Cv2.WaitKey();
@@ -136,20 +142,12 @@ namespace ChessVisionWin
         {
             using (var xOnYWin = new Window("X On Y"))
             {
-                Mat[,] xOnYHist = new Mat[2, 2] { { new Mat(), new Mat() }, { new Mat(), new Mat() } };
-                Mat difference = new Mat(frame.Size(), MatType.CV_16SC3);
+                Mat[,] xOnYHist = new Mat[3, 2] { { new Mat(), new Mat() }, { new Mat(), new Mat() }, { new Mat(), new Mat() } };
 
-                Mat sFrame = frame.Clone();
-                sFrame.ConvertTo(sFrame, MatType.CV_16SC3);
-                Mat sBg = BackgroundModel.Clone();
-                sBg.ConvertTo(sBg, MatType.CV_16SC3);
-
-                for (int pieceColor = 0; pieceColor < 2; pieceColor++)
+                for (int pieceColor = 0; pieceColor < 3; pieceColor++)
                 {
                     for (int squareColor = 0; squareColor < 2; squareColor++)
                     {
-                        Cv2.Subtract(sFrame, sBg, difference, SquaresMask);
-
                         //Cv2.MinMaxIdx(difference, out double minVal, out double maxVal);
                         //Console.WriteLine($"min = {minVal}; max = {maxVal}");
 
@@ -159,7 +157,7 @@ namespace ChessVisionWin
                         Cv2.WaitKey();
 
                         Cv2.CalcHist(
-                            images: new[] { difference },
+                            images: new[] { frame },
                             channels: new int[] { 0, 1, 2 },
                             mask: xOnYMask,
                             hist: xOnYHist[pieceColor, squareColor],
@@ -184,14 +182,31 @@ namespace ChessVisionWin
         Mat CreateXOnYMaskForInitialPositions(Mat frame, int pieceColor, int squareColor)
         {
             Mat mask = new Mat(frame.Size(), MatType.CV_8U, Scalar.Black);
-            int rowOffset = 6 * pieceColor; // Black (1) will be offset 6 squares, at rows 6 and 7
-            for (int row = rowOffset; row < 2 + rowOffset; row++)
+            if (pieceColor < 2)
             {
-                for (int col = 0; col < 8; col++)
+                int rowOffset = 6 * pieceColor; // Black (1) will be offset 6 squares, at rows 6 and 7
+                for (int row = rowOffset; row < 2 + rowOffset; row++)
                 {
-                    if (SquareColor(row, col) == squareColor)
+                    for (int col = 0; col < 8; col++)
                     {
-                        GetSquareMask(row, col, mask, SquareMaskScale);
+                        if (SquareColor(row, col) == squareColor)
+                        {
+                            DrawSquareMask(row, col, mask, SquareMaskScale);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                // Extract from empty squares, rows 2 through 5 (0-base)
+                for (int row = 2; row < 6; row++)
+                {
+                    for (int col = 0; col < 8; col++)
+                    {
+                        if (SquareColor(row, col) == squareColor)
+                        {
+                            DrawSquareMask(row, col, mask, SquareMaskScale);
+                        }
                     }
                 }
             }
@@ -208,7 +223,7 @@ namespace ChessVisionWin
                 {
                     if (SquareColor(row, col) == squareColor)
                     {
-                        GetSquareMask(row, col, mask);
+                        DrawSquareMask(row, col, mask);
                     }
                 }
             }
@@ -315,12 +330,12 @@ namespace ChessVisionWin
         /// <param name="dest">Destination matrix to hold the mask; must be the same size as the video frames used to initialize the model.</param>
         /// <param name="scale">Factor by which to scale the square from its center; 1.0 means no scaling; 0.5 means it will have half the width and height and a quarter of the area.</param>
         /// <returns></returns>
-        public void GetSquareMask(int row, int col, Mat dest, double scale = 1.0)
+        public void DrawSquareMask(int row, int col, Mat dest, double scale = 1.0)
         {
-            GetSquareMask(row, col, dest, BoardToImageTransform, scale);
+            DrawSquareMask(row, col, dest, BoardToImageTransform, scale);
         }
 
-        public static void GetSquareMask(int row, int col, Mat dest, Mat boardToImageTransform, double scale = 1.0)
+        public static void DrawSquareMask(int row, int col, Mat dest, Mat boardToImageTransform, double scale = 1.0)
         {
             var points = OCVUtil.ToPoints(GetSquarePoints(row, col, boardToImageTransform, scale));
             Cv2.FillConvexPoly(dest, points, Scalar.White);

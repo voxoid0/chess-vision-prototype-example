@@ -17,6 +17,8 @@ namespace ChessVisionWin
         //private const string VideoPath = @"C:\code\cv\chess\recordings\MVI_0018.MOV";
         //private const string VideoPath = @"C:\code\cv\chess\recordings\Aronian-Kramnik-2018.MOV";
         private const string VideoPath = @"C:\joel\large\cv-videos\chess\Aronian-Kramnik-2018.MOV";
+        //private const string VideoPath = @"C:\joel\large\cv-videos\chess\Karjakin-Caruana-2018.MOV";
+        //private const string VideoPath = @"C:\joel\large\cv-videos\chess\Karjakin-Caruana-2018-B.MOV";
         private const string ImagePath = @"C:\code\cv\chess\recordings\cg\chess2.png";
 
         private Mat resized = new Mat();
