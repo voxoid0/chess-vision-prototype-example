@@ -16,9 +16,9 @@ namespace ChessVisionWin
         //private const string VideoPath = @"C:\joel\large\cv-videos\chess\WIN_20180519_20_38_04_Pro.mp4";
         //private const string VideoPath = @"C:\code\cv\chess\recordings\MVI_0018.MOV";
         //private const string VideoPath = @"C:\code\cv\chess\recordings\Aronian-Kramnik-2018.MOV";
-        private const string VideoPath = @"C:\joel\large\cv-videos\chess\Aronian-Kramnik-2018.MOV";
+        //private const string VideoPath = @"C:\joel\large\cv-videos\chess\Aronian-Kramnik-2018.MOV";
         //private const string VideoPath = @"C:\joel\large\cv-videos\chess\Karjakin-Caruana-2018.MOV";
-        //private const string VideoPath = @"C:\joel\large\cv-videos\chess\Karjakin-Caruana-2018-B.MOV";
+        private const string VideoPath = @"C:\joel\large\cv-videos\chess\Karjakin-Caruana-2018-B.MOV";
         private const string ImagePath = @"C:\code\cv\chess\recordings\cg\chess2.png";
 
         private Mat resized = new Mat();
@@ -50,8 +50,9 @@ namespace ChessVisionWin
 
             using (var videoCapture = new VideoCapture(VideoPath))
             {
-                var video = new ChessVideoSource(videoCapture);
-                var chessboardModel = new ChessboardInitializer().Do(video);
+                SkipFrames(videoCapture, 3.0);
+                var video = new ChessVideoSource(videoCapture, speed: 3.0);
+                var chessboardModel = new FgSegChessboardInitializer().Do(video);
                 
                 var bgModelWin = new Window("Background Model");
                 bgModelWin.ShowImage(chessboardModel.BackgroundModel);
@@ -59,7 +60,7 @@ namespace ChessVisionWin
                 squaresMaskWin.ShowImage(chessboardModel.SquaresMask);
                 Cv2.WaitKey();
 
-                var segmenter = new BoardPieceSegmenter(chessboardModel);
+                var segmenter = new FgSegPieceSegmenter(chessboardModel);
                 segmenter.Do(video);
 
                 //Cv2.WaitKey();
@@ -89,6 +90,15 @@ namespace ChessVisionWin
                 //        }
                 //    }
 
+            }
+        }
+
+        private void SkipFrames(VideoCapture videoCapture, double seconds)
+        {
+            Mat frame = new Mat();
+            for (int f = 0; f < (int) (videoCapture.Fps * seconds); f++)
+            {
+                videoCapture.Read(frame);
             }
         }
 

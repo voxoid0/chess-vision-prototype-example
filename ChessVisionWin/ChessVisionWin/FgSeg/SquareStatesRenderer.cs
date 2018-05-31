@@ -7,31 +7,28 @@ using OpenCvSharp;
 
 namespace ChessVisionWin
 {
-    class SquareStatesRenderer
+    class BoolSquareStatesRenderer
     {
         private const int SquareSize = 32;
-        private readonly Scalar WhiteColor = Scalar.LightGray;
-        private readonly Scalar BlackColor = Scalar.Gray;
+        private readonly Scalar WhiteColor = Scalar.Gray;
+        private readonly Scalar BlackColor = Scalar.DarkGray;
         public Mat Output { get; private set; }
 
         private Window outWin = new Window("Estimated Board State");
 
-        public SquareStatesRenderer()
+        public BoolSquareStatesRenderer()
         {
             Output = new Mat(new Size(SquareSize * 8, SquareSize * 8), MatType.CV_8UC3);
         }
 
-        public void Render(SquareClassificationScores[,] scores)
+        public void Render(bool[,] state)
         {
             for (int row = 0; row < 8; row++)
             {
                 for (int col = 0; col < 8; col++)
                 {
-                    var squareState = scores[row, col].MostLikely;
-                    var color = squareState == 
-                        SquareState.White ? Scalar.White : 
-                            (squareState == SquareState.Black ? Scalar.Black : 
-                                (HistChessboardModel.IsWhiteSquare(row, col) ? WhiteColor : BlackColor));
+                    var color = state[row, col] ? Scalar.White : 
+                                (HistChessboardModel.IsWhiteSquare(row, col) ? WhiteColor : BlackColor);
                     Cv2.Rectangle(
                         img: Output, 
                         pt1: new Point(row * SquareSize, col * SquareSize),

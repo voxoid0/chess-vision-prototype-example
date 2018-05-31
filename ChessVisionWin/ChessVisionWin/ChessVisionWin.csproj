@@ -63,10 +63,19 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BoardPieceSegmenter.cs" />
-    <Compile Include="ChessboardInitializer.cs" />
+    <Compile Include="FgSeg\FgSegChessboardInitializer.cs" />
+    <Compile Include="FgSeg\FgSegChessboardModel.cs" />
+    <Compile Include="FgSeg\SquareStatesRenderer.cs" />
+    <Compile Include="Hist\HistChessboardModel.cs" />
+    <Compile Include="ChessColor.cs" />
+    <Compile Include="FgSeg\FgSegPieceSegmenter.cs" />
+    <Compile Include="Hist\HistogramPieceSegmenter.cs" />
+    <Compile Include="Hist\HistChessboardInitializer.cs" />
     <Compile Include="ChessVideoSource.cs" />
     <Compile Include="HistPlotter.cs" />
+    <Compile Include="Hist\SquareClassificationScores.cs" />
+    <Compile Include="SquareState.cs" />
+    <Compile Include="IVideo.cs" />
     <Compile Include="OCVUtil.cs" />
     <Compile Include="Pipeline\ChessPipeline1.cs" />
     <Compile Include="Pipeline\DefaultPipelineStage.cs" />
@@ -105,6 +114,7 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
